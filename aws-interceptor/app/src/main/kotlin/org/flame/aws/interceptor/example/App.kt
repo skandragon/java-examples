@@ -1,5 +1,10 @@
 package org.flame.aws.interceptor.example
 
+import software.amazon.awssdk.core.interceptor.Context
+import software.amazon.awssdk.core.interceptor.ExecutionAttribute
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor
+import software.amazon.awssdk.http.SdkHttpRequest
 import kotlin.system.exitProcess
 
 import software.amazon.awssdk.regions.Region;
@@ -14,10 +19,13 @@ class App {
         }
 
     fun run() {
-        val bucketName = "mybucket"
-        val region = Region.US_WEST_2
+        val bucketName = "opsmx-michael-test"
+        val region = Region.US_EAST_2
         val s3 = S3Client.builder()
             .region(region)
+            .overrideConfiguration {
+                it.addExecutionInterceptor(Interceptor())
+            }
             .build()
 
         listBucketObjects(s3, bucketName)
@@ -25,7 +33,6 @@ class App {
     }
 
     private fun listBucketObjects(s3: S3Client, bucketName: String) {
-
         try {
             val listObjects = ListObjectsRequest
                 .builder()
@@ -36,18 +43,33 @@ class App {
             val objects = res.contents()
 
             objects.forEach {
-                print("\n The name of the key is " + it.key())
-                print("\n The object is " + it.size() + " bytes")
-                print("\n The owner is " + it.owner())
+                println("  The name of the key is " + it.key())
+                println("  The object is " + it.size() + " bytes")
+                println("  The owner is " + it.owner())
 
             }
 
         } catch (e: S3Exception) {
-            System.err.println(e.awsErrorDetails().errorMessage());
+            println(e.awsErrorDetails().errorMessage());
             exitProcess(1);
         }
     }
+}
 
+class Interceptor : ExecutionInterceptor {
+    override fun beforeTransmission(context: Context.BeforeTransmission, executionAttributes: ExecutionAttributes) {
+        println("beforeTransmission:")
+        println(context.httpRequest())
+        println(executionAttributes.attributes)
+    }
+
+    override fun modifyHttpRequest(context: Context.ModifyHttpRequest, executionAttributes: ExecutionAttributes): SdkHttpRequest {
+        val req = context.httpRequest().copy {
+            it.putHeader("x-opsmx-original-host", it.host())
+            it.host("localhost:8000")
+        }
+        return req
+    }
 }
 
 fun main() {
