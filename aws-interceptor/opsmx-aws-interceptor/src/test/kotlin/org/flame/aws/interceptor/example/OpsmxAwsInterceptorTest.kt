@@ -55,6 +55,13 @@ class OpsmxAwsInterceptorTest {
         assertEquals(req, ret)
     }
 
+    @Test fun rejectsIfCantDecodeJWTlike() {
+        val i = OpsmxAwsInterceptor()
+        val credentials = AwsBasicCredentials.create("accessKey", "X.---.X")
+        val ret = i.modifyHttpRequest(modifyRequest, makeAttributes(credentials))
+        assertEquals(req, ret)
+    }
+
     @Test fun RejectsIfNotIssuedByUs() {
         val i = OpsmxAwsInterceptor()
 

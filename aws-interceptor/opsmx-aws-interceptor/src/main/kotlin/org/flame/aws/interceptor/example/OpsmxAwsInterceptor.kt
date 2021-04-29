@@ -61,7 +61,7 @@ class OpsmxAwsInterceptor : ExecutionInterceptor {
             it.putHeader("x-opsmx-service-signing-name", serviceSigningName)
             it.putHeader("x-opsmx-token", credentials.secretAccessKey())
 
-            it.host("localhost")
+            it.host("controller.svc.rpi.flame.org")
             it.port(5000)
         }
     }
