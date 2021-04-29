@@ -14,6 +14,7 @@ import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.model.ListBucketsRequest
 import java.util.*
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -40,6 +41,11 @@ class OpsmxAwsInterceptorTest {
             .put(ExecutionAttribute("ServiceSigningName"), "s3")
             .put(ExecutionAttribute("AwsCredentials"), creds)
             .build()
+    }
+
+    @BeforeTest fun setupEnvironment() {
+        System.setProperty("opsmx.controller.aws.hostname", "controller.example.com")
+        System.setProperty("opsmx.controller.aws.port", "9876")
     }
 
     @Test fun handlesNullCredentials() {
@@ -85,9 +91,8 @@ class OpsmxAwsInterceptorTest {
 
         val ret = i.modifyHttpRequest(modifyRequest, makeAttributes(credentials))
 
-        assertNotEquals(req, ret)
-        assertNotEquals("original-host.example.com", ret.host())
-        assertNotEquals(1234, ret.port())
+        assertEquals("controller.example.com", ret.host())
+        assertEquals(9876, ret.port())
 
         val headers = ret.headers()
         assertEquals(listOf("original-host.example.com"), headers["x-opsmx-original-host"])

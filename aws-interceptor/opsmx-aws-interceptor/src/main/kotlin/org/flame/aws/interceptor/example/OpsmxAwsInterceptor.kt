@@ -20,10 +20,17 @@ data class AgentToken(@SerialName("iss") val issuer: String?)
 class OpsmxAwsInterceptor : ExecutionInterceptor {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    private val hostname = System.getProperty("opsmx.controller.aws.hostname", "")
+    private val port = System.getProperty("opsmx.controller.aws.port")
+
     override fun modifyHttpRequest(
         context: Context.ModifyHttpRequest,
         executionAttributes: ExecutionAttributes
     ): SdkHttpRequest {
+        if (port == null || hostname == null) {
+            return context.httpRequest()
+        }
+
         val credentials = executionAttributes.getAttribute(ExecutionAttribute<AwsCredentials>("AwsCredentials"))
         
         if (credentials == null) {
@@ -61,8 +68,8 @@ class OpsmxAwsInterceptor : ExecutionInterceptor {
             it.putHeader("x-opsmx-service-signing-name", serviceSigningName)
             it.putHeader("x-opsmx-token", credentials.secretAccessKey())
 
-            it.host("controller.svc.rpi.flame.org")
-            it.port(5000)
+            it.host(hostname)
+            it.port(port.toInt())
         }
     }
 }
