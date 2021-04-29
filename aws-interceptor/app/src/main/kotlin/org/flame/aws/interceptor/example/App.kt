@@ -1,5 +1,6 @@
 package org.flame.aws.interceptor.example
 
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.core.interceptor.Context
 import software.amazon.awssdk.core.interceptor.ExecutionAttribute
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes
@@ -57,42 +58,29 @@ class App {
 }
 
 class Interceptor : ExecutionInterceptor {
-    override fun beforeTransmission(context: Context.BeforeTransmission, executionAttributes: ExecutionAttributes) {
-        println("beforeTransmission:")
-        println(context.httpRequest())
-        println("attributes: ${executionAttributes.attributes}")
-        context.httpRequest().headers().forEach { header ->
-            println("  ${header.key} ->")
-            header.value.forEach {
-                println("    $it")
-            }
-        }
-        println()
-    }
-
     override fun modifyHttpRequest(context: Context.ModifyHttpRequest, executionAttributes: ExecutionAttributes): SdkHttpRequest {
-        println("modifyHttpRequest:")
-        println("body: ${context.requestBody()}")
-
         val signingRegion = executionAttributes.getAttribute(ExecutionAttribute<Region>("SigningRegion"))
         val serviceSigningName = executionAttributes.getAttribute(ExecutionAttribute<String>("ServiceSigningName"))
+        val credentials = executionAttributes.getAttribute(ExecutionAttribute<AwsBasicCredentials>("AwsCredentials"))
 
         val req = context.httpRequest().copy {
             it.putHeader("x-opsmx-original-host", it.host())
             it.putHeader("x-opsmx-original-port", it.port().toString())
             it.putHeader("x-opsmx-signing-region", signingRegion.toString())
             it.putHeader("x-opsmx-service-signing-name", serviceSigningName)
+            it.putHeader("X-Opsmx-Token", credentials.secretAccessKey())
 
             it.host("localhost")
             it.port(5000)
         }
-        println("Authorization header: ${context.requestBody()}")
-        println("attributes: ${executionAttributes.attributes}")
 
         return req
     }
 }
 
 fun main() {
+    System.setProperty("javax.net.ssl.trustStore", "keystore");
+    System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+
     App().run()
 }
