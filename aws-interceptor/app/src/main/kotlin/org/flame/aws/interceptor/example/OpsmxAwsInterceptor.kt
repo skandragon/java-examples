@@ -17,7 +17,7 @@ import java.util.*
 @Serializable
 data class AgentToken(@SerialName("iss") val issuer: String?)
 
-class Interceptor : ExecutionInterceptor {
+class OpsmxAwsInterceptor : ExecutionInterceptor {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     override fun modifyHttpRequest(
@@ -59,7 +59,7 @@ class Interceptor : ExecutionInterceptor {
             it.putHeader("x-opsmx-original-port", it.port().toString())
             it.putHeader("x-opsmx-signing-region", signingRegion.toString())
             it.putHeader("x-opsmx-service-signing-name", serviceSigningName)
-            it.putHeader("X-Opsmx-Token", credentials.secretAccessKey())
+            it.putHeader("x-opsmx-token", credentials.secretAccessKey())
 
             it.host("localhost")
             it.port(5000)
