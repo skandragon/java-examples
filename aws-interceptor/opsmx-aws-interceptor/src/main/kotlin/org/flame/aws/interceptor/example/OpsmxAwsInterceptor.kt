@@ -20,14 +20,24 @@ data class AgentToken(@SerialName("iss") val issuer: String?)
 class OpsmxAwsInterceptor : ExecutionInterceptor {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    private val hostname = System.getProperty("opsmx.controller.aws.hostname", "")
-    private val port = System.getProperty("opsmx.controller.aws.port")
+    private val hostname = getprop("opsmx.controller.aws.hostname")
+    private val port = getprop("opsmx.controller.aws.port")
+    private val configured = hostname != null && port != null
+
+    fun getprop(name: String) : String? {
+        val ret = System.getProperty(name)
+        if (ret != null) {
+            return ret
+        }
+        val envname = name.toUpperCase().replace(".", "_")
+        return System.getenv(envname)
+    }
 
     override fun modifyHttpRequest(
         context: Context.ModifyHttpRequest,
         executionAttributes: ExecutionAttributes
     ): SdkHttpRequest {
-        if (port == null || hostname == null) {
+        if (!configured) {
             return context.httpRequest()
         }
 
