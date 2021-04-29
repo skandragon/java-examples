@@ -60,14 +60,35 @@ class Interceptor : ExecutionInterceptor {
     override fun beforeTransmission(context: Context.BeforeTransmission, executionAttributes: ExecutionAttributes) {
         println("beforeTransmission:")
         println(context.httpRequest())
-        println(executionAttributes.attributes)
+        println("attributes: ${executionAttributes.attributes}")
+        context.httpRequest().headers().forEach { header ->
+            println("  ${header.key} ->")
+            header.value.forEach {
+                println("    $it")
+            }
+        }
+        println()
     }
 
     override fun modifyHttpRequest(context: Context.ModifyHttpRequest, executionAttributes: ExecutionAttributes): SdkHttpRequest {
+        println("modifyHttpRequest:")
+        println("body: ${context.requestBody()}")
+
+        val signingRegion = executionAttributes.getAttribute(ExecutionAttribute<Region>("SigningRegion"))
+        val serviceSigningName = executionAttributes.getAttribute(ExecutionAttribute<String>("ServiceSigningName"))
+
         val req = context.httpRequest().copy {
             it.putHeader("x-opsmx-original-host", it.host())
-            it.host("localhost:8000")
+            it.putHeader("x-opsmx-original-port", it.port().toString())
+            it.putHeader("x-opsmx-signing-region", signingRegion.toString())
+            it.putHeader("x-opsmx-service-signing-name", serviceSigningName)
+
+            it.host("localhost")
+            it.port(5000)
         }
+        println("Authorization header: ${context.requestBody()}")
+        println("attributes: ${executionAttributes.attributes}")
+
         return req
     }
 }
